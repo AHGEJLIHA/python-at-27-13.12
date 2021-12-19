@@ -75,7 +75,7 @@ for idx, v in enumerate(percentiles):
     print(f"до {men_percentiles[idx]} получают {percentiles[idx]}% мужчин")
     print(f"до {women_percentiles[idx]} получают {percentiles[idx]}% женщин")
 
-# Графики распределения по з/п мужчин и женщин
+# Графики перцентели
 figure(figsize=(10, 6))
 plt.xlabel("Salary")
 plt.ylabel("Percentiles")

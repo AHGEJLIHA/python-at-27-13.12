@@ -67,7 +67,7 @@ cur.execute('SELECT salary FROM works where gender = "Женский"')
 women_salary = [t[0] for t in cur.fetchall()]
 # print('Зарплаты женщин: ', women_salary)
 
-#Построение перцентили
+# Построение перцентили
 percentiles = range(10, 91, 10)
 women_percentiles = np.percentile(women_salary, percentiles, interpolation='lower')
 men_percentiles = np.percentile(men_salary, percentiles, interpolation='lower')
@@ -84,3 +84,95 @@ plt.plot(women_percentiles, percentiles, 'red')
 plt.plot(men_percentiles, percentiles, 'blue')
 plt.legend(["Женщины", "Мужчины"])
 plt.show()
+
+# График распределения по заработным платам у мужчин и женщин
+salary_step = 10000
+salary_limit = 160000
+figure(figsize=(28, 7))
+bins = int(salary_limit / salary_step)
+xs = range(0, salary_limit, salary_step)
+ys = [round(i * salary_step, 2) for i in [j * 1e-6 for j in range(0, 36, 5)]]
+
+women_salary = np.array([s[0] for s in cur.execute("SELECT salary FROM works WHERE gender='Женский';")])
+men_salary = np.array([s[0] for s in cur.execute("SELECT salary FROM works WHERE gender='Мужской';")])
+women_data = women_salary[women_salary <= salary_limit]
+men_data = men_salary[men_salary <= salary_limit]
+
+plt.xticks(labels=xs, ticks=xs)
+plt.yticks(labels=ys, ticks=ys)
+plt.hist([men_data, women_data], bins, label=['Мужчины', 'Женщины'], density=True)
+plt.legend(loc='upper right')
+plt.title("График распределения заработной платы мужчин и женщин")
+plt.ylabel("Распределение по долям")
+plt.xlabel("Зарплата")
+plt.show()
+
+# График распределения по заработным платам у мужчин и женщин
+stmt_for_higher_edu = "SELECT salary FROM works WHERE salary <= " + str(salary_limit) + " AND educationType = "
+stmt_for_not_higher_edu = "SELECT salary FROM works WHERE salary <= " + str(salary_limit) + " AND NOT educationType = "
+higher_edu = np.array([i[0] for i in cur.execute(stmt_for_higher_edu + "'Высшее';")])
+not_higher_edu = np.array([i[0] for i in cur.execute(stmt_for_not_higher_edu + "'Высшее';")])
+
+y_loc = [i * 1e-6 for i in range(0, 41, 5)]
+ys = [round(i * salary_step, 2) for i in y_loc]
+figure(figsize=(28, 7))
+plt.xticks(ticks=xs, labels=xs, rotation=30)
+plt.yticks(ticks=y_loc, labels=ys)
+plt.hist([higher_edu, not_higher_edu], bins,
+         label=['Высшее', 'Невысшее'], density=True)
+plt.legend(loc='upper right')
+plt.title("График распределения заработной платы по образованию")
+plt.xlabel("Зарплата")
+plt.ylabel("Распределение по долям")
+
+plt.show()
+
+# Домашнее задание
+# Таблица для гендера
+cur.execute('CREATE TABLE genders(ID INTEGER PRIMARY KEY AUTOINCREMENT,'
+            'gender_value TEXT)')
+con.commit()
+
+cur.execute('INSERT INTO genders(gender_value) SELECT DISTINCT gender '
+            'FROM works WHERE gender IS NOT NULL')
+con.commit()
+
+cur.execute('ALTER TABLE works ADD COLUMN gender_id INTEGER REFERENCES genders(id)')
+con.commit()
+
+cur.execute('UPDATE works SET gender_id = (SELECT id FROM genders WHERE gender_value = works.gender)')
+con.commit()
+
+cur.execute('ALTER TABLE works DROP COLUMN gender')
+con.commit()
+
+# По гендеру
+cur.execute('SELECT * FROM genders')
+# print(cur.fetchall())
+cur.execute('SELECT gender_value FROM genders,works WHERE genders.id = works.gender_id')
+# print(cur.fetchall())
+
+
+# Таблица для образования
+cur.execute('create table education(id INTEGER PRIMARY KEY AUTOINCREMENT, edu_value TEXT)')
+con.commit()
+
+cur.execute('INSERT INTO education(edu_value) SELECT DISTINCT educationType '
+            'FROM works WHERE educationType IS NOT NULL')
+con.commit()
+
+cur.execute('ALTER TABLE works ADD COLUMN educationType_id INTEGER REFERENCES education(id)')
+con.commit()
+
+cur.execute('UPDATE works SET educationType_id = (SELECT id FROM education '
+            'WHERE edu_value = works.educationType)')
+con.commit()
+
+cur.execute('ALTER TABLE works DROP COLUMN educationType')
+con.commit()
+
+# По образованию
+cur.execute('SELECT * FROM education')
+# print(cursor.fetchall())
+cur.execute('SELECT edu_value FROM education,works WHERE education.id = works.educationType_id')
+# print(cursor.fetchall())
